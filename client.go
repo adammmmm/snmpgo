@@ -228,27 +228,24 @@ func (s *SNMP) GetBulkWalk(oids Oids, nonRepeaters, maxRepetitions int) (result 
 		filled := len(varBinds) == len(reqOids)*maxRepetitions
 		varBinds = varBinds.Sort().Uniq()
 
-		for i, _ := range reqOids {
-			matched := varBinds.MatchBaseOids(oids[i])
-			mLength := len(matched)
-
-			if mLength == 0 || resBinds.MatchOid(matched[mLength-1].Oid) != nil {
+		for i, oid := range reqOids {
+			matched := varBinds.MatchBaseOids(oid)
+			if len(matched) == 0 || resBinds.MatchOid(matched[len(matched)-1].Oid) != nil {
 				reqOids[i] = nil
 				continue
 			}
 
-			hasError := false
+			var hasError bool
 			for _, val := range matched {
 				switch val.Variable.(type) {
 				case *NoSucheObject, *NoSucheInstance, *EndOfMibView:
 					hasError = true
 				default:
 					resBinds = append(resBinds, val)
-					reqOids[i] = val.Oid
 				}
 			}
 
-			if hasError || (filled && mLength < maxRepetitions) {
+			if hasError || (filled && len(matched) < maxRepetitions) {
 				reqOids[i] = nil
 			}
 		}
